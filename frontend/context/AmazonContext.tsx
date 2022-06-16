@@ -3,11 +3,12 @@ import { useMoralis } from 'react-moralis';
 
 
 interface IAmazonContext {
-oleh: number
+  oleh: number
 }
+
 export const AmazonContext = React.createContext<IAmazonContext | null>(null);
 
-export const AmazonProvider:React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [username, setUsername] = React.useState<string>('')
   const [nickname, setNickname] = React.useState<string>('');
 
@@ -20,10 +21,31 @@ export const AmazonProvider:React.FC<{ children: React.ReactNode }> = ({ childre
     isWeb3Enabled,
   } = useMoralis()
 
-  return (
-    <AmazonContext className="Provider" value={{
 
-    }}>
+  React.useEffect(() => {
+    (async() => {
+      if (isAuthenticated) {
+        const currentUsername: string = await user?.get('nickname');
+        setUsername(currentUsername);
+      }
+    })()
+  }, [isAuthenticated, user, username])
+
+  const handleSetUsername = () => {
+    if (user) {
+      if (nickname) {
+        user.set('nickname', nickname);
+        user.save();
+        setNickname('');
+      } else {
+        console.log('Can\'t set empty nickname');
+      }
+    }
+  }
+
+
+  return (
+    <AmazonContext className="Provider" value={{}}>
       {children}
     </AmazonContext>
   )
