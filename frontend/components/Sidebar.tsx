@@ -6,10 +6,14 @@ import logo from '../assets/amazon_logo.png';
 import logoFull from '../assets/amazon_logo_full.png';
 import { FaBox } from 'react-icons/fa'
 import { AiOutlineHistory, BsFillBookmarkFill, BsFillPersonFill } from 'react-icons/all';
-const isAuthenticated = true;
-const username = 'Oleh'
+import { AmazonContext } from '../context/AmazonContext';
+
 
 export const Sidebar = () => {
+
+
+  // @ts-ignore
+  const { nickname, setNickname, username, setUsername, isAuthenticated } = React.useContext(AmazonContext)
 
   const styles = {
     container: `h-full w-[300px] flex flex-col bg-[#fff] static`,
