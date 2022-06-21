@@ -49,6 +49,7 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 
   return (
+    // @ts-ignore
     <AmazonContext className="Provider" value={{
       isAuthenticated,
       setNickname,
