@@ -1,5 +1,6 @@
 import React from 'react';
 import { AmazonContext } from '../context/AmazonContext';
+import { Card } from './Card';
 
 
 export const Cards = () => {

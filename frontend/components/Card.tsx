@@ -1,6 +1,7 @@
 import React from 'react';
 import { AmazonContext } from '../context/AmazonContext';
 import { FaCoins } from 'react-icons/all';
+import Image from 'next/image'
 
 interface ICard {
   item: any
@@ -27,6 +28,7 @@ export const Card:React.FC<ICard> = ({ item }) => {
           className='object-cover object-center'
           width={190}
           height={250}
+          alt='product'
         />
       </div>
       <div>
