@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMoralis } from 'react-moralis';
+import { useMoralis, useMoralisQuery } from 'react-moralis';
 
 
 interface IAmazonContext {
@@ -15,7 +15,7 @@ export const AmazonContext = React.createContext<IAmazonContext | null>(null);
 export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [username, setUsername] = React.useState<string>('')
   const [nickname, setNickname] = React.useState<string>('');
-
+  const [assets, setAssets] = React.useState<any[]>([])
   const {
     authenticate,
     isAuthenticated,
@@ -24,6 +24,13 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     user,
     isWeb3Enabled,
   } = useMoralis()
+
+  const {
+    data: assetsData,
+    error: assetsDataError,
+    isLoading: useDataisLoading,
+  } = useMoralisQuery('assets')
+
 
 
   React.useEffect(() => {
@@ -44,6 +51,17 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       } else {
         console.log('Can\'t set empty nickname');
       }
+    }
+  }
+
+
+  const getAssets = async () => {
+    try {
+      await enableWeb3();
+      setAssets(assetsData);
+
+    } catch (error) {
+      console.log(error)
     }
   }
 
