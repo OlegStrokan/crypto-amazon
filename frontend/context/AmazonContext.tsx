@@ -8,6 +8,7 @@ interface IAmazonContext {
   setUsername: () => void;
   username: string;
   nickname: string;
+  assets: any[];
 }
 
 export const AmazonContext = React.createContext<IAmazonContext | null>(null);
@@ -42,6 +43,25 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     })()
   }, [isAuthenticated, user, username])
 
+  const getAssets = async () => {
+    try {
+      await enableWeb3();
+      setAssets(assetsData);
+
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  React.useEffect(() => {(
+    (async() => {
+      if (isWeb3Enabled) {
+        await getAssets();
+      }
+    })())
+  },[getAssets, isWeb3Enabled])
+
+
   const handleSetUsername = () => {
     if (user) {
       if (nickname) {
@@ -55,16 +75,6 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }
 
 
-  const getAssets = async () => {
-    try {
-      await enableWeb3();
-      setAssets(assetsData);
-
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
 
   return (
     // @ts-ignore
@@ -73,7 +83,8 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setNickname,
       setUsername,
       username,
-      nickname
+      nickname,
+      assets,
     }}>
       {children}
     </AmazonContext>
