@@ -16,9 +16,7 @@ export const Cards = () => {
       <div className={styles.title}>New Release</div>
       <div className={styles.cards}>
         <div className={styles.cards}>
-          {assets.map((item) => {
-            let asset = item.attributes
-
+          {assets.map((item: any) => {
             return <Card key={item.id} item={item.attributes} />
           })}
         </div>
