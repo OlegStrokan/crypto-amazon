@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMoralis, useMoralisQuery } from 'react-moralis';
-
+import {amazonCoinAddress, amazonABI } from '../lib/constants';
 
 interface IAmazonContext {
   isAuthenticated: boolean,
@@ -16,7 +16,13 @@ export const AmazonContext = React.createContext<IAmazonContext | null>(null);
 export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [username, setUsername] = React.useState<string>('')
   const [nickname, setNickname] = React.useState<string>('');
-  const [assets, setAssets] = React.useState<any[]>([])
+  const [assets, setAssets] = React.useState<any[]>([]);
+  const [currentAccount, setCurrentAccount] = React.useState<string>('');
+  const [tokenAmount, setTokenAmount] = React.useState<string>('');
+  const [amountDue, setAmountDue] = React.useState<string>('');
+  const [etherscanLink, setEtherscanLink] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState<string>('');
+  const [balance, setBalance] = React.useState<string>('');
   const {
     authenticate,
     isAuthenticated,
@@ -43,6 +49,28 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     })()
   }, [isAuthenticated, user, username])
 
+
+  const getBalance = async () => {
+    try {
+      if (!isAuthenticated || !currentAccount) return;
+
+      const options = {
+        contractAddress: amazonCoinAddress,
+        functionName: 'balanceOf',
+        abi: amazonABI,
+        params: {
+          account: currentAccount,
+        }
+      }
+
+      if (isWeb3Enabled) {
+        const response = await Moralis.executeFunction(options);
+        setBalance(response.toString());
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
   const getAssets = async () => {
     try {
       await enableWeb3();

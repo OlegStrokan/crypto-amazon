@@ -9,9 +9,11 @@ function MyApp({ Component, pageProps }: AppProps) {
     <MoralisProvider serverUrl={process.env.NEXT_PUBLIC_MORALIS_SERVER} appId={process.env.NEXT_PUBLIC_MORALIS_APP_ID}
                      initializeOnMount={false}>
       <AmazonProvider>
-        <ModalProvider>
-        <Component {...pageProps} />
-        </ModalProvider>
+        {//@ts-ignore
+          <ModalProvider>
+            <Component {...pageProps} />
+          </ModalProvider>
+        }
       </AmazonProvider>
     </MoralisProvider>
   )
