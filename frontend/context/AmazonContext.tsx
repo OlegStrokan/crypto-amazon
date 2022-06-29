@@ -1,6 +1,7 @@
 import React from 'react';
 import { useMoralis, useMoralisQuery } from 'react-moralis';
 import {amazonCoinAddress, amazonABI } from '../lib/constants';
+import { ethers } from 'ethers'
 
 interface IAmazonContext {
   isAuthenticated: boolean,
@@ -71,6 +72,28 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log(error)
     }
   }
+
+  const buyTokens = async () => {
+    if (!isAuthenticated) {
+      await authenticate();
+    }
+  }
+
+  const amount = ethers.BigNumber.from(tokenAmount);
+  const price = ethers.BigNumber.from('100000000000000');
+  const calcPrice = amount.mul(price);
+
+  let options = {
+    contractAddress: amazonCoinAddress,
+    functionName: 'mint',
+    abi: amazonABI,
+    msgValue: calcPrice,
+    params: {
+      amount,
+    }
+  }
+
+
   const getAssets = async () => {
     try {
       await enableWeb3();
