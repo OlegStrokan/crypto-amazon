@@ -22,7 +22,7 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [tokenAmount, setTokenAmount] = React.useState<string>('');
   const [amountDue, setAmountDue] = React.useState<string>('');
   const [etherscanLink, setEtherscanLink] = React.useState<string>('');
-  const [isLoading, setIsLoading] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [balance, setBalance] = React.useState<string>('');
   const {
     authenticate,
@@ -46,9 +46,11 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (isAuthenticated) {
         const currentUsername: string = await user?.get('nickname');
         setUsername(currentUsername);
+        const account = await user?.get('ethAddress');
+        setCurrentAccount(account);
       }
     })()
-  }, [isAuthenticated, user, username])
+  }, [isAuthenticated, user, username, currentAccount])
 
 
   const getBalance = async () => {
@@ -77,22 +79,30 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!isAuthenticated) {
       await authenticate();
     }
-  }
 
-  const amount = ethers.BigNumber.from(tokenAmount);
-  const price = ethers.BigNumber.from('100000000000000');
-  const calcPrice = amount.mul(price);
+    const amount = ethers.BigNumber.from(tokenAmount);
+    const price = ethers.BigNumber.from('100000000000000');
+    const calcPrice = amount.mul(price);
 
-  let options = {
-    contractAddress: amazonCoinAddress,
-    functionName: 'mint',
-    abi: amazonABI,
-    msgValue: calcPrice,
-    params: {
-      amount,
+    let options = {
+      contractAddress: amazonCoinAddress,
+      functionName: 'mint',
+      abi: amazonABI,
+      msgValue: String(calcPrice),
+      params: {
+        amount,
+      }
     }
-  }
 
+    const transaction = await Moralis.executeFunction(options);
+    // @ts-ignore
+    const receipt = await transaction.wait(4);
+    setIsLoading(false);
+    console.log(receipt);
+    setEtherscanLink(`http://rinkeby.etherscan.io/tx${receipt.transactionHash}`)
+
+
+  }
 
   const getAssets = async () => {
     try {
