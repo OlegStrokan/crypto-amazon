@@ -3,16 +3,8 @@ import { useMoralis, useMoralisQuery } from 'react-moralis';
 import {amazonCoinAddress, amazonABI } from '../lib/constants';
 import { ethers } from 'ethers'
 
-interface IAmazonContext {
-  isAuthenticated: boolean,
-  setNickname: () => void;
-  setUsername: () => void;
-  username: string;
-  nickname: string;
-  assets: any[];
-}
 
-export const AmazonContext = React.createContext<IAmazonContext | null>(null);
+export const AmazonContext = React.createContext<any>([]);
 
 export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [username, setUsername] = React.useState<string>('')
@@ -44,6 +36,7 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   React.useEffect(() => {
     (async() => {
       if (isAuthenticated) {
+        await getBalance();
         const currentUsername: string = await user?.get('nickname');
         setUsername(currentUsername);
         const account = await user?.get('ethAddress');
@@ -146,6 +139,16 @@ export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       username,
       nickname,
       assets,
+      balance,
+      setTokenAmount,
+      tokenAmount,
+      amountDue,
+      setAmountDue,
+      isLoading,
+      setIsLoading,
+      setEtherscanLink,
+      etherscanLink,
+      currentAccount
     }}>
       {children}
     </AmazonContext>
