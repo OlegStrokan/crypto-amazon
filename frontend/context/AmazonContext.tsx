@@ -1,156 +1,257 @@
-import React from 'react';
-import { useMoralis, useMoralisQuery } from 'react-moralis';
-import {amazonCoinAddress, amazonABI } from '../lib/constants';
+import React from 'react'
+import { useMoralis, useMoralisQuery } from 'react-moralis'
+import { amazonAbi, amazonCoinAddress } from '../lib/constants'
 import { ethers } from 'ethers'
 
+export const AmazonContext = React.createContext()
 
-export const AmazonContext = React.createContext<any>([]);
+export const AmazonProvider = ({ children }) => {
+    const [currentAccount, setCurrentAccount] = React.useState('')
+    const [formattedAccount, setFormattedAccount] = React.useState('')
+    const [balance, setBalance] = React.useState('')
+    const [tokenAmount, setTokenAmount] = React.useState('')
+    const [amountDue, setAmountDue] = React.useState('')
+    const [isLoading, setIsLoading] = React.useState(false)
+    const [etherscanLink, setEtherscanLink] = React.useState('')
+    const [nickname, setNickname] = React.useState('')
+    const [username, setUsername] = React.useState('')
+    const [assets, setAssets] = React.useState([])
+    const [recentTransactions, setRecentTransactions] = React.useState([])
+    const [ownedItems, setOwnedItems] = React.useState([])
 
-export const AmazonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [username, setUsername] = React.useState<string>('')
-  const [nickname, setNickname] = React.useState<string>('');
-  const [assets, setAssets] = React.useState<any[]>([]);
-  const [currentAccount, setCurrentAccount] = React.useState<string>('');
-  const [tokenAmount, setTokenAmount] = React.useState<string>('');
-  const [amountDue, setAmountDue] = React.useState<string>('');
-  const [etherscanLink, setEtherscanLink] = React.useState<string>('');
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [balance, setBalance] = React.useState<string>('');
-  const {
-    authenticate,
-    isAuthenticated,
-    enableWeb3,
-    Moralis,
-    user,
-    isWeb3Enabled,
-  } = useMoralis()
+    const {
+        authenticate,
+        isAuthenticated,
+        enableWeb3,
+        Moralis,
+        user,
+        isWeb3Enabled,
+    } = useMoralis()
 
-  const {
-    data: assetsData,
-    error: assetsDataError,
-    isLoading: useDataisLoading,
-  } = useMoralisQuery('assets')
+    const {
+        data: userData,
+        error: userDataError,
+        isLoading: userDataIsLoading,
+    } = useMoralisQuery('_User')
 
+    const {
+        data: assetsData,
+        error: assetsDataError,
+        isLoading: assetsDataIsLoading,
+    } = useMoralisQuery('Assets')
 
+    React.useEffect(async () => {
+        console.log(assetsData)
+        await enableWeb3()
+        await getAssets()
+        await getOwnedAssets()
+    }, [userData, assetsData, assetsDataIsLoading, userDataIsLoading])
 
-  React.useEffect(() => {
-    (async() => {
-      if (isAuthenticated) {
-        await getBalance();
-        const currentUsername: string = await user?.get('nickname');
-        setUsername(currentUsername);
-        const account = await user?.get('ethAddress');
-        setCurrentAccount(account);
-      }
-    })()
-  }, [isAuthenticated, user, username, currentAccount])
-
-
-  const getBalance = async () => {
-    try {
-      if (!isAuthenticated || !currentAccount) return;
-
-      const options = {
-        contractAddress: amazonCoinAddress,
-        functionName: 'balanceOf',
-        abi: amazonABI,
-        params: {
-          account: currentAccount,
+    React.useEffect(async () => {
+        if (!isWeb3Enabled) {
+            await enableWeb3()
         }
-      }
+        await listenToUpdates()
 
-      if (isWeb3Enabled) {
-        const response = await Moralis.executeFunction(options);
-        setBalance(response.toString());
-      }
-    } catch (error) {
-      console.log(error)
+        if (isAuthenticated) {
+            await getBalance()
+            const currentUsername = await user?.get('nickname')
+            setUsername(currentUsername)
+            const account = await user?.get('ethAddress')
+            setCurrentAccount(account)
+            const formatAccount = account.slice(0, 5) + '...' + account.slice(-5)
+            setFormattedAccount(formatAccount)
+        } else {
+            setCurrentAccount('')
+            setFormattedAccount('')
+            setBalance('')
+        }
+    }, [
+        isWeb3Enabled,
+        isAuthenticated,
+        balance,
+        setBalance,
+        authenticate,
+        currentAccount,
+        setUsername,
+        user,
+        username,
+    ])
+
+    const connectWallet = async () => {
+        await enableWeb3()
+        await authenticate()
     }
-  }
 
-  const buyTokens = async () => {
-    if (!isAuthenticated) {
-      await authenticate();
+    const buyTokens = async () => {
+        if (!isAuthenticated) {
+            await connectWallet()
+        }
+
+        const amount = ethers.BigNumber.from(tokenAmount)
+        const price = ethers.BigNumber.from('100000000000000')
+        const calcPrice = amount.mul(price)
+
+        console.log(amazonCoinAddress)
+
+        let options = {
+            contractAddress: amazonCoinAddress,
+            functionName: 'mint',
+            abi: amazonAbi,
+            msgValue: calcPrice,
+            params: {
+                amount,
+            },
+        }
+        const transaction = await Moralis.executeFunction(options)
+        const receipt = await transaction.wait()
+        setIsLoading(false)
+        console.log(receipt)
+        setEtherscanLink(
+            `https://rinkeby.etherscan.io/tx/${receipt.transactionHash}`,
+        )
     }
 
-    const amount = ethers.BigNumber.from(tokenAmount);
-    const price = ethers.BigNumber.from('100000000000000');
-    const calcPrice = amount.mul(price);
-
-    let options = {
-      contractAddress: amazonCoinAddress,
-      functionName: 'mint',
-      abi: amazonABI,
-      msgValue: String(calcPrice),
-      params: {
-        amount,
-      }
+    const handleSetUsername = () => {
+        if (user) {
+            if (nickname) {
+                user.set('nickname', nickname)
+                user.save()
+                setNickname('')
+            } else {
+                console.log("Can't set empty nickname")
+            }
+        } else {
+            console.log('No user')
+        }
     }
 
-    const transaction = await Moralis.executeFunction(options);
-    // @ts-ignore
-    const receipt = await transaction.wait(4);
-    setIsLoading(false);
-    console.log(receipt);
-    setEtherscanLink(`http://rinkeby.etherscan.io/tx${receipt.transactionHash}`)
+    const getBalance = async () => {
+        try {
+            if (!isAuthenticated || !currentAccount) return
+            const options = {
+                contractAddress: amazonCoinAddress,
+                functionName: 'balanceOf',
+                abi: amazonAbi,
+                params: {
+                    account: currentAccount,
+                },
+            }
 
-
-  }
-
-  const getAssets = async () => {
-    try {
-      await enableWeb3();
-      setAssets(assetsData);
-
-    } catch (error) {
-      console.log(error)
+            if (isWeb3Enabled) {
+                const response = await Moralis.executeFunction(options)
+                console.log(response.toString())
+                setBalance(response.toString())
+            }
+        } catch (error) {
+            console.log(error)
+        }
     }
-  }
 
-  React.useEffect(() => {(
-    (async() => {
-      if (isWeb3Enabled) {
-        await getAssets();
-      }
-    })())
-  },[getAssets, isWeb3Enabled])
+    const buyAsset = async (price, asset) => {
+        try {
+            if (!isAuthenticated) return
+            console.log('price: ', price)
+            console.log('asset: ', asset.name)
+            console.log(userData)
 
+            const options = {
+                type: 'erc20',
+                amount: price,
+                receiver: amazonCoinAddress,
+                contractAddress: amazonCoinAddress,
+            }
 
-  const handleSetUsername = () => {
-    if (user) {
-      if (nickname) {
-        user.set('nickname', nickname);
-        user.save();
-        setNickname('');
-      } else {
-        console.log('Can\'t set empty nickname');
-      }
+            let transaction = await Moralis.transfer(options)
+            const receipt = await transaction.wait()
+
+            if (receipt) {
+                //You can do this but it's not necessary with Moralis hooks!
+                // const query = new Moralis.Query('_User')
+                // const results = await query.find()
+
+                const res = userData[0].add('ownedAsset', {
+                    ...asset,
+                    purchaseDate: Date.now(),
+                    etherscanLink: `https://rinkeby.etherscan.io/tx/${receipt.transactionHash}`,
+                })
+
+                await res.save().then(() => {
+                    alert("You've successfully purchased this asset!")
+                })
+            }
+        } catch (error) {
+            console.log(error.message)
+        }
     }
-  }
 
+    const getAssets = async () => {
+        try {
+            await enableWeb3()
+            // const query = new Moralis.Query('Assets')
+            // const results = await query.find()
 
+            setAssets(assetsData)
+        } catch (error) {
+            console.log(error)
+        }
+    }
 
-  return (
-    // @ts-ignore
-    <AmazonContext className="Provider" value={{
-      isAuthenticated,
-      setNickname,
-      setUsername,
-      username,
-      nickname,
-      assets,
-      balance,
-      setTokenAmount,
-      tokenAmount,
-      amountDue,
-      setAmountDue,
-      isLoading,
-      setIsLoading,
-      setEtherscanLink,
-      etherscanLink,
-      currentAccount
-    }}>
-      {children}
-    </AmazonContext>
-  )
+    const listenToUpdates = async () => {
+        let query = new Moralis.Query('EthTransactions')
+        let subscription = await query.subscribe()
+        subscription.on('update', async object => {
+            console.log('New Transactions')
+            console.log(object)
+            setRecentTransactions([object])
+        })
+    }
+
+    const getOwnedAssets = async () => {
+        try {
+            // let query = new Moralis.Query('_User')
+            // let results = await query.find()
+
+            if (userData[0]) {
+                setOwnedItems(prevItems => [
+                    ...prevItems,
+                    userData[0].attributes.ownedAsset,
+                ])
+            }
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    return (
+        <AmazonContext.Provider
+            value={{
+                formattedAccount,
+                isAuthenticated,
+                buyTokens,
+                getBalance,
+                balance,
+                setTokenAmount,
+                tokenAmount,
+                amountDue,
+                setAmountDue,
+                isLoading,
+                setIsLoading,
+                setEtherscanLink,
+                etherscanLink,
+                buyAsset,
+                currentAccount,
+                nickname,
+                setNickname,
+                username,
+                setUsername,
+                handleSetUsername,
+                assets,
+                recentTransactions,
+                ownedItems,
+            }}
+        >
+            {children}
+        </AmazonContext.Provider>
+    )
 }
